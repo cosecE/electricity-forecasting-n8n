@@ -1,0 +1,201 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "cef2ca60-bb83-4c74-a686-72de64c1a045",
+      "name": "When chat message received",
+      "webhookId": "0e0d7c4e-7fca-4e97-8f52-facde7c88cd4"
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Extract the entity_id from this query.\n\nReturn ONLY JSON:\n{\n  \"entity_id\": \"...\"\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "76626d18-0733-45b9-a6c1-3567178a768f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        208,
+        160
+      ],
+      "id": "4eca2e3e-7b62-47de-bb85-4ab9f1075ae9",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "KcfhRLBQfa3vMfgR",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"entity_id\": \"string\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        384,
+        144
+      ],
+      "id": "35cff4a7-3002-4fe1-b903-a0d2c726f82a",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/forecast",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"entity_id\": \"{{ $json.output.entity_id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        560,
+        0
+      ],
+      "id": "a7d02baa-2567-41c3-b1a9-98e4b260a67d",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are analyzing electricity load forecasts.\n\nContext:\n- Data represents hourly electricity consumption (kWh)\n- Each entity is a consumer\n- Cluster indicates usage level (Low, Medium, High)\n- Forecasts come from SARIMAX models with confidence intervals\n\nHere is the forecast:\n{{ JSON.stringify($json) }}\n\nIn 2-3 sentences:\n- Describe the trend\n- Mention uncertainty if relevant\n- Give one practical energy insight\n- Be concise and avoid bullet points",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        768,
+        0
+      ],
+      "id": "d57a6496-fe3b-47f7-a673-f094cd543834",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        768,
+        160
+      ],
+      "id": "5c84540b-6e4f-4ad8-a217-e08d030e2b3a",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "KcfhRLBQfa3vMfgR",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "edc4cb45-2f6e-408f-874a-0793e7b38e03",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "304860b65a7b10e7d18ca1109aebc5080e0d047a1be4f09b2d946b4873aac3fa"
+  },
+  "id": "VRf3skzPNFTaecMfRVs1C",
+  "tags": []
+}
